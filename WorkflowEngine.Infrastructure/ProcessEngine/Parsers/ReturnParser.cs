@@ -1,6 +1,4 @@
-﻿
-
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using WorkflowEngine.Domain.ProcessEngine.Entities.Modules;
 using WorkflowEngine.Infrastructure.ProcessEngine.Execution;
 
@@ -8,9 +6,10 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Parsers;
 
 public static class ReturnParser
 {
-    // Pattern to match RETURNS(@Field1, @Field2, ...);
+    // Updated pattern to match RETURNS outside STATEMENT()
+    // Matches: RETURNS(@Field1, @Field2, ...)
     private static readonly Regex ReturnsPattern = new Regex(
-        @"RETURNS\s*\(\s*(@[A-Za-z0-9_]+(?:\s*,\s*@[A-Za-z0-9_]+)*)\s*\)\s*;?\s*$",
+        @"RETURNS\s*\(\s*(@[A-Za-z0-9_]+(?:\s*,\s*@[A-Za-z0-9_]+)*)\s*\)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled
     );
 
@@ -22,6 +21,8 @@ public static class ReturnParser
 
     /// <summary>
     /// Parse RETURNS clause and return field names
+    /// Works with both formats:
+    /// - Old: ... RETURNS(@Field1, @Field2);
     /// </summary>
     public static List<string> ParseReturnFields(string sql)
     {
@@ -45,7 +46,8 @@ public static class ReturnParser
     }
 
     /// <summary>
-    /// Remove RETURNS clause from SQL
+    /// Remove RETURNS clause from SQL (not needed anymore with STATEMENT wrapper)
+    /// Kept for backward compatibility
     /// </summary>
     public static string RemoveReturnsClause(string sql)
     {

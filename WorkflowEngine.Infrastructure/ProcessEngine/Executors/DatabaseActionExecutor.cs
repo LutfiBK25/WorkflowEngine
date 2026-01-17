@@ -1,5 +1,4 @@
-﻿
-using Npgsql;
+﻿using Npgsql;
 using System.Text.RegularExpressions;
 using WorkflowEngine.Domain.ProcessEngine.Entities.Modules;
 using WorkflowEngine.Infrastructure.ProcessEngine.Execution;
@@ -7,20 +6,26 @@ using WorkflowEngine.Infrastructure.ProcessEngine.Parsers;
 
 namespace WorkflowEngine.Infrastructure.ProcessEngine.Executors;
 
-
-// Example:
-//      CONNECT WMS;
-//       SELECT * FROM warehouse_putaway(
-//         @Field_Name1,
-//         @Field_Name2,
-//         @Field_Name3,
-//      )
-//      RETURNS(@Field_Name4, @Field_Name5);
+// New Format:
+//      STATEMENT(
+//          CONNECT WMS;
+//          SELECT * FROM warehouse_putaway(
+//              @Field_Name1,
+//              @Field_Name2,
+//              @Field_Name3
+//          )
+//      ) RETURNS(@Field_Name4, @Field_Name5)
 public class DatabaseActionExecutor : IActionExecutor
 {
     public static readonly DatabaseActionExecutor Instance = new();
 
-    // Pattern to match CONNECT statement at the beginning
+    // Pattern to match STATEMENT(...) wrapper
+    private static readonly Regex StatementPattern = new Regex(
+        @"STATEMENT\s*\((.*?)\)\s*(?=RETURNS|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+    );
+
+    // Pattern to match CONNECT statement
     private static readonly Regex ConnectPattern = new Regex(
         @"^\s*CONNECT\s+([A-Za-z0-9_]+)\s*;",
         RegexOptions.IgnoreCase | RegexOptions.Compiled
@@ -42,10 +47,24 @@ public class DatabaseActionExecutor : IActionExecutor
                 return ActionResult.Fail($"Database action module {moduleId} not found");
             }
 
-            string sql = dbModule.SqlStatement;
+            string originalStatement = dbModule.SqlStatement;
+            string sql;
             string? databaseName = null;
 
-            // 1. Parse CONNECT statement
+            // 1. Extract SQL from STATEMENT(...) wrapper
+            var statementMatch = StatementPattern.Match(originalStatement);
+            if (statementMatch.Success)
+            {
+                // SQL is inside STATEMENT(...)
+                sql = statementMatch.Groups[1].Value.Trim();
+            }
+            else
+            {
+                // Fallback: no STATEMENT wrapper, use entire statement
+                sql = originalStatement;
+            }
+
+            // 2. Parse CONNECT statement from the extracted SQL
             var connectMatch = ConnectPattern.Match(sql);
             if (connectMatch.Success)
             {
@@ -54,11 +73,8 @@ public class DatabaseActionExecutor : IActionExecutor
                 sql = ConnectPattern.Replace(sql, "").TrimStart();
             }
 
-            // 2. Parse RETURNS clause
-            var returnFieldNames = ReturnParser.ParseReturnFields(sql);
-
-            // 3. Remove RETURNS clause from SQL
-            sql = ReturnParser.RemoveReturnsClause(sql);
+            // 3. Parse RETURNS clause from original statement (outside STATEMENT)
+            var returnFieldNames = ReturnParser.ParseReturnFields(originalStatement);
 
             // 4. Substitute @FieldName with actual values
             sql = FieldParser.SubstituteFieldValues(sql, session);
