@@ -17,6 +17,7 @@ public class ExecutionEngine
         _moduleCache = new ModuleCache();
     }
 
+    public Dictionary<string, string> ConnectionStrings => _connectionStrings;
     public ModuleCache Cache => _moduleCache;
 
     public async Task LoadApplicationsToEngineAsync(CancellationToken cancellationToken = default)

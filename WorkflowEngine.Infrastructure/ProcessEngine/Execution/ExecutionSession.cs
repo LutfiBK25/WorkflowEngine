@@ -19,11 +19,14 @@ public class ExecutionSession
 {
 
     // Initial Session Data
-    public Guid SessionId { get; }
+    public Guid SessionId { get; } // should i remove this
     public DateTime StartTime { get; }
+    public DateTime LastActive { get; set; }
     private readonly Guid _application;
     private readonly Guid _processModule;
-    public string UserId { get; set; }
+
+    // Since user ID will be unique because it will be 1 session per user, when they log out it removes it when relogin from disconnect it retracks to the session
+    public string UserId { get; set; } 
     private readonly ModuleCache _moduleCache;
     private Dictionary<string, string> _connectionStrings;
 
@@ -51,6 +54,7 @@ public class ExecutionSession
     {
         SessionId = Guid.NewGuid();
         StartTime = DateTime.UtcNow;
+        LastActive = DateTime.UtcNow;
         _application = application;
         _processModule = processModule;
         UserId = userId;

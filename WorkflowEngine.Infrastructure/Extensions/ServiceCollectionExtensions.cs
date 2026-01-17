@@ -3,11 +3,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WorkflowEngine.Infrastructure.ProcessEngine;
 using WorkflowEngine.Infrastructure.ProcessEngine.Presistence;
 using WorkflowEngine.Infrastructure.ProcessEngine.Services;
 using WorkflowEngine.Infrastructure.ProcessEngine.Workers;
+using WorkflowEngine.Infrastructure.Session;
+using WorkflowEngine.Infrastructure.Session.Workers;
 
-namespace WorkflowEngine.Infrastructure.ProcessEngine.Extensions;
+namespace WorkflowEngine.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
@@ -44,8 +47,21 @@ public static class ServiceCollectionExtensions
         // =============================================
         // SERVICES
         // =============================================
+
+        // Application Service
         services.AddScoped<ApplicationsService>();
+
+        // Execution Engine
         services.AddSingleton<ExecutionEngine>();
+
+        // Session Management
+        services.AddSingleton<ISessionStore, InMemorySessionStore>();
+        services.AddSingleton<SessionManager>();
+
+        // Background cleanup service
+        services.AddHostedService<SessionCleanupService>();
+
+        // Background Worker
         services.AddHostedService<WorkflowEngineWorker>();
     }
 }
