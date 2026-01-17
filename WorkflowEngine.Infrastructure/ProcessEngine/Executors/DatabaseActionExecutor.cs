@@ -6,7 +6,7 @@ using WorkflowEngine.Infrastructure.ProcessEngine.Parsers;
 
 namespace WorkflowEngine.Infrastructure.ProcessEngine.Executors;
 
-// New Format:
+// Format:
 //      STATEMENT(
 //          CONNECT WMS;
 //          SELECT * FROM warehouse_putaway(
@@ -53,28 +53,25 @@ public class DatabaseActionExecutor : IActionExecutor
 
             // 1. Extract SQL from STATEMENT(...) wrapper
             var statementMatch = StatementPattern.Match(originalStatement);
-            if (statementMatch.Success)
+            if (!statementMatch.Success)
             {
-                // SQL is inside STATEMENT(...)
-                sql = statementMatch.Groups[1].Value.Trim();
-            }
-            else
-            {
-                // Fallback: no STATEMENT wrapper, use entire statement
-                sql = originalStatement;
+                return ActionResult.Fail(
+                    $"Invalid SQL format. Expected: STATEMENT(...) RETURNS(...). " +
+                    $"Module: {dbModule.Name}");
             }
 
-            // 2. Parse CONNECT statement from the extracted SQL
+            sql = statementMatch.Groups[1].Value.Trim();
+
+            // 2. Parse RETURNS clause (outside STATEMENT)
+            var returnFieldNames = ReturnParser.ParseReturnFields(originalStatement);
+
+            // 3. Parse CONNECT statement
             var connectMatch = ConnectPattern.Match(sql);
             if (connectMatch.Success)
             {
                 databaseName = connectMatch.Groups[1].Value;
-                // Remove CONNECT statement from SQL
                 sql = ConnectPattern.Replace(sql, "").TrimStart();
             }
-
-            // 3. Parse RETURNS clause from original statement (outside STATEMENT)
-            var returnFieldNames = ReturnParser.ParseReturnFields(originalStatement);
 
             // 4. Substitute @FieldName with actual values
             sql = FieldParser.SubstituteFieldValues(sql, session);
