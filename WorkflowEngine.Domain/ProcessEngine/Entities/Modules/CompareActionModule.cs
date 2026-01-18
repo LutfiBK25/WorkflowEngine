@@ -20,6 +20,6 @@ public class CompareActionModule : Module
 
     public CompareActionModule()
     {
-        ModuleType = ModuleType.C
+        ModuleType = ModuleType.CompareAction;
     }
 }
