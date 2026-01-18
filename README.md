@@ -54,12 +54,13 @@ A powerful, flexible workflow execution engine built with .NET 10 that enables v
 
 ### Adding ActionModule
 1. Create a class in Domain Inheriting `Module` class
-2. Add to ActionType
-3. Add to `ReposityDBContext`
-4. In Package Manager set infratructure as Startup Project and choose it in default project
+2. Add ModuleType
+3. Add to ActionType
+4. Add to `ReposityDBContext`
+5. In Package Manager set infratructure as Startup Project and choose it in default project
     A. Add-Migration AddNewNameActionModule
     B. Update-Database
-5. In Infrastructure add to LoadApplicationsIntoCache
+6. In Infrastructure add to LoadApplicationsIntoCache
 
 
 ### Adding a New Executor

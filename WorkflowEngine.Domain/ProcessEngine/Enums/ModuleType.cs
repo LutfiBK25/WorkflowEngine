@@ -5,4 +5,5 @@ public enum ModuleType
     DialogAction = 2,
     DatabaseAction = 3,
     FieldModule = 4,
+    CompareAction = 5,
 }

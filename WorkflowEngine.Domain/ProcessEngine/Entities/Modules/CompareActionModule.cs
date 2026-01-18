@@ -17,4 +17,9 @@ public class CompareActionModule : Module
     public bool Input2IsConstant { get; set; }
     public Guid? Input2FieldId { get; set; }
     public string Input2Value { get; set; } = string.Empty ;
+
+    public CompareActionModule()
+    {
+        ModuleType = ModuleType.C
+    }
 }
