@@ -34,7 +34,7 @@ public class ExecutionSession
 
     private readonly Stack<ExecutionFrame> _callStack = new(); // Process Module Call Stack
 
-    private Dictionary<Guid, object> _fieldValues = new(); // Session Fields
+    private Dictionary<Guid, object?> _fieldValues = new(); // Session Fields
 
 
     // Pause/Resume Support
@@ -130,7 +130,7 @@ public class ExecutionSession
     /// <summary>
     /// Sets a field value explicitly
     /// </summary>
-    public void SetFieldValue(Guid fieldId, object value)
+    public void SetFieldValue(Guid fieldId, object? value)
     {
         _fieldValues[fieldId] = value;
     }
@@ -287,6 +287,15 @@ public class ExecutionSession
         var fieldModule = GetFieldModule(fieldId);
         return fieldModule?.DefaultValue != null;
     }
+
+    /// <summary>
+    /// Removes a specific field value from the session
+    /// </summary>
+    public bool RemoveFieldValue(Guid fieldId)
+    {
+        return _fieldValues.Remove(fieldId);
+    }
+
 
     public void ClearFields()
     {

@@ -51,6 +51,8 @@ A powerful, flexible workflow execution engine built with .NET 10 that enables v
 - `t_dialog_action_modules` - User input prompts
 - `t_field_modules` - Variable definitions
 - `t_compare_action_modules` - Compare Action
+- `t_calculate_action_modules` - Calculate Action
+_ `t_calculate_module_details` - Calculate Steps
 
 ### Adding ActionModule
 1. Create a class in Domain Inheriting `Module` class

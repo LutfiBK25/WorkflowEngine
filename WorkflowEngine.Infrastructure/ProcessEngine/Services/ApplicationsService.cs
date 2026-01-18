@@ -62,12 +62,18 @@ public class ApplicationsService
                 .Where(m => m.ApplicationId == app.Id)
                 .ToListAsync(stoppingToken);
 
+            var calcActionModules = await _repositoryDBContext.CalculateActionsModules
+                .Include(cm => cm.Details)
+                .Where(m => m.ApplicationId != app.Id)
+                .ToListAsync(stoppingToken);
+
             // Combine all modules
             allModules.AddRange(processModules);
             allModules.AddRange(dbActionModules);
             allModules.AddRange(dialogModules);
             allModules.AddRange(fieldModules);
             allModules.AddRange(cmpActionModules);
+            allModules.AddRange(calcActionModules);
 
             // Load into cache
             moduleCache.LoadApplicationModules(app.Id, allModules);
@@ -75,9 +81,9 @@ public class ApplicationsService
 
             _logger.LogInformation(
                 "Loaded {ProcessCount} process, {DbCount} database, {DialogCount} dialog," +
-                " {FieldCount} field modules, {CompareAction} compare modules for application '{AppName}'",
-                processModules.Count, dbActionModules.Count, dialogModules.Count, fieldModules.Count,
-                cmpActionModules.Count,app.Name);
+                " {FieldCount} field, {CompareCount} compare, {CalcCount} calculate modules for application '{AppName}'",
+                processModules.Count, dbActionModules.Count, dialogModules.Count,
+                fieldModules.Count, cmpActionModules.Count, calcActionModules.Count, app.Name);
         }
         _logger.LogInformation("Successfully loaded all {Count} applications into cache", applications.Count);
 

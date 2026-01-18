@@ -6,4 +6,5 @@ public enum ModuleType
     DatabaseAction = 3,
     FieldModule = 4,
     CompareAction = 5,
+    CalculateAction = 6,
 }

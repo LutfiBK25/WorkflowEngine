@@ -12,5 +12,6 @@ namespace WorkflowEngine.Domain.ProcessEngine.Enums
         DatabaseExecute = 4,
         Dialog = 5,
         Compare = 6,
+        Calcualte = 7,
     }
 }

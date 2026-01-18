@@ -9,7 +9,8 @@ public class ActionExecutorRegistry
     { ActionType.Call, ProcessModuleExecutor.Instance },
     { ActionType.Dialog, DialogExecutor.Instance },
     { ActionType.DatabaseExecute, DatabaseActionExecutor.Instance },
-    { ActionType.Compare, CompareExecutor.Instance }
+    { ActionType.Compare, CompareExecutor.Instance },
+    {ActionType.Calcualte, CalculateExecutor.Instance },
 };
 
     /// <summary>

@@ -19,9 +19,12 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
         public DbSet<DialogActionModule> DialogActionModules { get; set; }
         public DbSet<FieldModule> FieldModules { get; set; }
         public DbSet<CompareActionModule> CompareActionsModules { get; set; }
+        public DbSet<CalculateActionModule> CalculateActionsModules { get; set; }
 
         // Process module steps
         public DbSet<ProcessModuleDetail> ProcessModuleDetails { get; set; }
+        // Calculate module steps
+        public DbSet<CalculateModuleDetail> CalculateModuleDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -322,6 +325,78 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
                 entity.Property(e => e.Input2Value)
                     .HasColumnName("input2_value")
                     .HasDefaultValue(string.Empty);
+            });
+
+            // =============================================
+            // CALCULATE ACTION MODULE - Concrete Type
+            // =============================================
+            modelBuilder.Entity<CalculateActionModule>(entity =>
+            {
+                entity.ToTable("t_calculate_action_modules");
+
+                // Relationship to ProcessModuleDetail
+                entity.HasMany(e => e.Details)
+                    .WithOne(d => d.CalculateActionModule)
+                    .HasForeignKey(d => d.CalculateActionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // =============================================
+            // CALCULATE MODULE DETAIL - STEPS
+            // =============================================
+
+            modelBuilder.Entity<CalculateModuleDetail>(entity =>
+            {
+                entity.ToTable("t_calculate_module_details");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.CalculateActionId)
+                    .HasColumnName("calculate_action_id")
+                    .IsRequired();
+
+                entity.Property(e => e.Sequence)
+                    .HasColumnName("sequence")
+                    .IsRequired();
+
+                entity.Property(e => e.OperatorId)
+                    .HasColumnName("operator_id")
+                    .HasConversion<int>()
+                    .IsRequired();
+
+                entity.Property(e => e.Input1IsConstant)
+                    .HasColumnName("input1_is_constant")
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                entity.Property(e => e.Input1FieldId)
+                    .HasColumnName("input1_field_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.Input1Value)
+                    .HasColumnName("input1_value")
+                    .HasDefaultValue(string.Empty);
+
+                entity.Property(e => e.Input2IsConstant)
+                    .HasColumnName("input2_is_constant")
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                entity.Property(e => e.Input2FieldId)
+                    .HasColumnName("input2_field_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.Input2Value)
+                    .HasColumnName("input2_value")
+                    .HasDefaultValue(string.Empty);
+
+                entity.Property(e => e.ResultFieldId)
+                    .HasColumnName("result_field_id")
+                    .IsRequired();
+
             });
         }
     }
