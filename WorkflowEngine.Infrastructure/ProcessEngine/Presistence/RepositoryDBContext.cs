@@ -18,6 +18,7 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
         public DbSet<DatabaseActionModule> DatabaseActionModules { get; set; }
         public DbSet<DialogActionModule> DialogActionModules { get; set; }
         public DbSet<FieldModule> FieldModules { get; set; }
+        public DbSet<CompareActionModule> CompareActionsModules { get; set; }
 
         // Process module steps
         public DbSet<ProcessModuleDetail> ProcessModuleDetails { get; set; }
@@ -282,6 +283,45 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
                 //entity.HasIndex(e => new { e.ApplicationId, e.Name })
                 //    .IsUnique()
                 //    .HasDatabaseName("uq_field_module_name_per_application");
+            });
+
+            // =============================================
+            // COMPARE ACTION MODULE - Concrete Type
+            // =============================================
+            modelBuilder.Entity<CompareActionModule>(entity =>
+            {
+                entity.ToTable("t_compare_action_modules");
+
+                entity.Property(e => e.OperatorId)
+                    .HasColumnName("operator_id")
+                    .HasConversion<int>()
+                    .IsRequired();
+
+                entity.Property(e => e.Input1IsConstant)
+                    .HasColumnName("input1_is_constant")
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                entity.Property(e => e.Input1FieldId)
+                    .HasColumnName("input1_field_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.Input1Value)
+                    .HasColumnName("input1_value")
+                    .HasDefaultValue(string.Empty);
+
+                entity.Property(e => e.Input2IsConstant)
+                    .HasColumnName("input2_is_constant")
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                entity.Property(e => e.Input2FieldId)
+                    .HasColumnName("input2_field_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.Input2Value)
+                    .HasColumnName("input2_value")
+                    .HasDefaultValue(string.Empty);
             });
         }
     }

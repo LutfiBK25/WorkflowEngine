@@ -31,6 +31,7 @@ A powerful, flexible workflow execution engine built with .NET 10 that enables v
 - **Database Action Modules** - SQL templates with field references
 - **Dialog Action Modules** - User input prompts linked to fields
 - **Field Modules** - Typed variables (String, Number, Boolean, DateTime)
+- **Compare Action Modules** - Compare Two values and return Pass or Fail
 
 ### Module Types
 - `ProcessModule` (ActionType.Call) - Execute subprocess
@@ -38,6 +39,7 @@ A powerful, flexible workflow execution engine built with .NET 10 that enables v
 - `DialogActionModule` (ActionType.Dialog) - Show user prompt
 - `ReturnPass` (ActionType.ReturnPass) - Exit with success
 - `ReturnFail` (ActionType.ReturnFail) - Exit with failure
+- `CompareActionModule` Compare Two Fields
 
 ## Database Schema
 
@@ -48,6 +50,16 @@ A powerful, flexible workflow execution engine built with .NET 10 that enables v
 - `t_database_action_modules` - SQL action templates
 - `t_dialog_action_modules` - User input prompts
 - `t_field_modules` - Variable definitions
+- `t_compare_action_modules` - Compare Action
+
+### Adding ActionModule
+1. Create a class in Domain Inheriting `Module` class
+2. Add to ActionType
+3. Add to `ReposityDBContext`
+4. In Package Manager set infratructure as Startup Project and choose it in default project
+    A. Add-Migration AddNewNameActionModule
+    B. Update-Database
+5. In Infrastructure add to LoadApplicationsIntoCache
 
 
 ### Adding a New Executor
