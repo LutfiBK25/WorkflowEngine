@@ -2,31 +2,13 @@
 
 A powerful, flexible workflow execution engine built with .NET 10 that enables visual process automation with database integration and interactive user dialogs.
 
-┌─────────────────────────────────────────────────────┐
-│                External World                       │
-└─────────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────────┐
-│          Public API (User Management)                │
-│  - User authentication                               │
-│  - User authorization                                │
-│  - Session management                                │
-│  - Business logic                                    │
-│  - Rate limiting                                     │
-│  - Input validation                                  │
-└─────────────────────────────────────────────────────┘
-                        ↓ (Internal Network)
-┌─────────────────────────────────────────────────────┐
-│        Workflow Engine API (Internal)                │
-│  - Start workflow                                    │
-│  - Resume workflow                                   │
-│  - Get session status                                │
-│  - Cancel session                                    │
-└─────────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────────┐
-│              PostgreSQL Database                     │
-└─────────────────────────────────────────────────────┘
+
+WorkFlow Engine API
+- Start work flow
+- Resume work flow
+- session status
+- restart session
+- cancel session
 
 
 ## Features
