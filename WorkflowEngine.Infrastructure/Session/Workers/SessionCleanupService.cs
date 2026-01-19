@@ -29,8 +29,9 @@ public class SessionCleanupService : BackgroundService
             {
                 await Task.Delay(_cleanupInterval, stoppingToken);
 
-                _logger.LogDebug("Running session cleanup");
+                _logger.LogInformation("Running session cleanup");
                 await _sessionManager.CleanupExpiredSessionsAsync(_sessionInActiveMaxAge, stoppingToken);
+                _logger.LogInformation("Session cleanup completed");
             }
             catch (OperationCanceledException)
             {
