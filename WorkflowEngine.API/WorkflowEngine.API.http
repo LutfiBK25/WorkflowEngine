@@ -2,7 +2,6 @@
 
 ###
 POST http://localhost:5008/api/workflow/start
-# ↑ Changed from https to http
 Content-Type: application/json
 
 {
@@ -16,17 +15,105 @@ POST http://localhost:5008/api/workflow/resume
 Content-Type: application/json
 
 {
-  "sessionId": "7fb3e9a7-7f59-4658-ab85-a13da4a23414",
+  "sessionId": "b1f37fb4-b420-4765-b225-1594b0622538",
   "fieldId": "22222222-2222-2222-2222-222222222221",
-  "value": "ORD-006"
+  "value": "ORD-005"
 }
 
 
 ###
-GET http://localhost:5008/api/workflow/session/{{sessionId}}
+GET http://localhost:5008/api/workflow/session/984f6d61-b55f-472d-9997-5472e15155eb
 
 ###
 GET http://localhost:5008/api/workflow/user/john.doe/session
 
 ###
 DELETE http://localhost:5008/api/workflow/session/cbab3e21-3d71-4511-b1a0-53dfac2a294c
+
+
+
+# =============================================
+# EXAMPLE 2: Price Calculator (Advanced)
+# Tests: Nested Process, Calculate, Compare, NEXT/PREV
+# =============================================
+
+### Start Price Calculator Workflow
+POST http://localhost:5008/api/workflow/start
+Content-Type: application/json
+
+{
+  "applicationId": "22222222-2222-2222-2222-222222222222",
+  "processModuleId": "88888888-8888-8888-8888-888888888802",
+  "username": "jane.smith"
+}
+
+### Step 1: Enter Quantity (12 - gets discount)
+POST http://localhost:5008/api/workflow/resume
+Content-Type: application/json
+
+{
+  "sessionId": "3cb16d39-fd5e-4163-9ea7-9011949d786b",
+  "fieldId": "33333333-3333-3333-3333-333333333301",
+  "value": "12"
+}
+
+### Step 2: Enter Unit Price
+POST http://localhost:5008/api/workflow/resume
+Content-Type: application/json
+
+{
+  "sessionId": "3cb16d39-fd5e-4163-9ea7-9011949d786b",
+  "fieldId": "33333333-3333-3333-3333-333333333302",
+  "value": "10.50"
+}
+
+### Step 3: Acknowledge Result
+POST http://localhost:5008/api/workflow/resume
+Content-Type: application/json
+
+{
+  "sessionId": "3cb16d39-fd5e-4163-9ea7-9011949d786b",
+  "fieldId": "33333333-3333-3333-3333-333333333309",
+  "value": "OK"
+}
+
+### Test Small Quantity (5 - no discount)
+# Start fresh session first, then:
+POST http://localhost:5008/api/workflow/resume
+Content-Type: application/json
+
+{
+  "sessionId": "8dcf24d4-adaa-4360-b204-baccad8c8884",
+  "fieldId": "33333333-3333-3333-3333-333333333301",
+  "value": "5"
+}
+
+###
+# =============================================
+# UTILITY ENDPOINTS
+# =============================================
+
+### Get Session Status
+GET http://localhost:5008/api/workflow/session/{{sessionId}}
+
+### Get User's Active Session
+GET http://localhost:5008/api/workflow/user/john.doe/session
+
+### Cancel Session
+DELETE http://localhost:5008/api/workflow/session/{{sessionId}}
+
+# =============================================
+# EXPECTED RESULTS - Price Calculator
+# =============================================
+
+# Scenario 1: Quantity = 12, UnitPrice = 10.50
+# → Subtotal = 126.00
+# → Discount (10%) = 113.40
+# → Tax (8%) = 9.07
+# → Total = 122.47
+
+# Scenario 2: Quantity = 5, UnitPrice = 10.50
+# → Subtotal = 52.50
+# → No Discount
+# → Tax (8%) = 4.20
+# → Total = 56.70

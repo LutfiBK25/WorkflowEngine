@@ -44,9 +44,32 @@ public class ProcessModuleExecutor : IActionExecutor
                 session.PausedAtProcessModuleId == moduleId &&
                 session.PausedAtStep.HasValue)
             {
-                startingSequence = session.PausedAtStep.Value + 1; // Resume from NEXT step
+                // ✅ FIX: Resolve next step based on paused step's PassLabel
+                var steps = processModule.Details.OrderBy(d => d.Sequence).ToList();
+                var pausedStep = steps.FirstOrDefault(s => s.Sequence == session.PausedAtStep.Value);
+
+                if (pausedStep != null)
+                {
+                    // Dialog always returns Pass, so use PassLabel
+                    startingSequence = ResolveNextSequence(
+                        steps,
+                        session.PausedAtStep.Value,
+                        pausedStep.PassLabel);
+
+                    if (startingSequence == -1)
+                    {
+                        // PassLabel resolution failed - default to next
+                        startingSequence = session.PausedAtStep.Value + 1;
+                    }
+                }
+                else
+                {
+                    // Fallback if step not found
+                    startingSequence = session.PausedAtStep.Value + 1;
+                }
+
                 session.Resume(); // Clear pause state
-                // Don't push frame - it's already on the stack
+                                  // Don't push frame - it's already on the stack
             }
             else
             {
