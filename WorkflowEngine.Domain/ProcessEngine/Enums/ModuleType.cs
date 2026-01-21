@@ -7,4 +7,5 @@ public enum ModuleType
     FieldModule = 4,
     CompareAction = 5,
     CalculateAction = 6,
+    ListModule = 7,
 }

@@ -324,9 +324,51 @@ namespace WorkflowEngine.Infrastructure.Migrations
                 {
                     b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
 
-                    b.Property<Guid>("FieldModuleId")
+                    b.Property<int>("DialogType")
+                        .HasColumnType("integer")
+                        .HasColumnName("dialog_type");
+
+                    b.Property<Guid?>("Help1FieldId")
                         .HasColumnType("uuid")
-                        .HasColumnName("field_module_id");
+                        .HasColumnName("help1_field_id");
+
+                    b.Property<Guid?>("Help2FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("help2_field_id");
+
+                    b.Property<Guid?>("Help3FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("help3_field_id");
+
+                    b.Property<Guid?>("ListModuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("list_module_id");
+
+                    b.Property<string>("MaskCharacter")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)")
+                        .HasDefaultValue("*")
+                        .HasColumnName("mask_character");
+
+                    b.Property<bool>("MaskInput")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("mask_input");
+
+                    b.Property<Guid?>("MessageFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_field_id");
+
+                    b.Property<Guid?>("OptionsFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("options_field_id");
+
+                    b.Property<Guid?>("ResultFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_field_id");
 
                     b.ToTable("t_dialog_action_modules", (string)null);
                 });
@@ -345,6 +387,17 @@ namespace WorkflowEngine.Infrastructure.Migrations
                         .HasColumnName("field_type");
 
                     b.ToTable("t_field_modules", (string)null);
+                });
+
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.ListModule", b =>
+                {
+                    b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
+
+                    b.Property<int?>("MaxRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_rows");
+
+                    b.ToTable("t_list_modules", (string)null);
                 });
 
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.ProcessModule", b =>

@@ -12,8 +12,8 @@ using WorkflowEngine.Infrastructure.ProcessEngine.Presistence;
 namespace WorkflowEngine.Infrastructure.Migrations
 {
     [DbContext(typeof(RepositoryDBContext))]
-    [Migration("20260118014619_AddCompareActionModule")]
-    partial class AddCompareActionModule
+    [Migration("20260121151352_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -79,6 +79,70 @@ namespace WorkflowEngine.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("t_applications", (string)null);
+                });
+
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CalculateModuleDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CalculateActionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("calculate_action_id");
+
+                    b.Property<Guid?>("Input1FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("input1_field_id");
+
+                    b.Property<bool>("Input1IsConstant")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("input1_is_constant");
+
+                    b.Property<string>("Input1Value")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("")
+                        .HasColumnName("input1_value");
+
+                    b.Property<Guid?>("Input2FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("input2_field_id");
+
+                    b.Property<bool>("Input2IsConstant")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("input2_is_constant");
+
+                    b.Property<string>("Input2Value")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("")
+                        .HasColumnName("input2_value");
+
+                    b.Property<int>("OperatorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("operator_id");
+
+                    b.Property<Guid>("ResultFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_field_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CalculateActionId");
+
+                    b.ToTable("t_calculate_module_details", (string)null);
                 });
 
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module", b =>
@@ -195,6 +259,13 @@ namespace WorkflowEngine.Infrastructure.Migrations
                     b.ToTable("t_process_module_details", (string)null);
                 });
 
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CalculateActionModule", b =>
+                {
+                    b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
+
+                    b.ToTable("t_calculate_action_modules", (string)null);
+                });
+
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CompareActionModule", b =>
                 {
                     b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
@@ -256,9 +327,51 @@ namespace WorkflowEngine.Infrastructure.Migrations
                 {
                     b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
 
-                    b.Property<Guid>("FieldModuleId")
+                    b.Property<int>("DialogType")
+                        .HasColumnType("integer")
+                        .HasColumnName("dialog_type");
+
+                    b.Property<Guid?>("Help1FieldId")
                         .HasColumnType("uuid")
-                        .HasColumnName("field_module_id");
+                        .HasColumnName("help1_field_id");
+
+                    b.Property<Guid?>("Help2FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("help2_field_id");
+
+                    b.Property<Guid?>("Help3FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("help3_field_id");
+
+                    b.Property<Guid?>("ListModuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("list_module_id");
+
+                    b.Property<string>("MaskCharacter")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)")
+                        .HasDefaultValue("*")
+                        .HasColumnName("mask_character");
+
+                    b.Property<bool>("MaskInput")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("mask_input");
+
+                    b.Property<Guid?>("MessageFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_field_id");
+
+                    b.Property<Guid?>("OptionsFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("options_field_id");
+
+                    b.Property<Guid?>("ResultFieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_field_id");
 
                     b.ToTable("t_dialog_action_modules", (string)null);
                 });
@@ -279,6 +392,17 @@ namespace WorkflowEngine.Infrastructure.Migrations
                     b.ToTable("t_field_modules", (string)null);
                 });
 
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.ListModule", b =>
+                {
+                    b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
+
+                    b.Property<int?>("MaxRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_rows");
+
+                    b.ToTable("t_list_modules", (string)null);
+                });
+
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.ProcessModule", b =>
                 {
                     b.HasBaseType("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module");
@@ -288,6 +412,17 @@ namespace WorkflowEngine.Infrastructure.Migrations
                         .HasColumnName("comment");
 
                     b.ToTable("t_process_modules", (string)null);
+                });
+
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CalculateModuleDetail", b =>
+                {
+                    b.HasOne("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CalculateActionModule", "CalculateActionModule")
+                        .WithMany("Details")
+                        .HasForeignKey("CalculateActionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CalculateActionModule");
                 });
 
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.Module", b =>
@@ -315,6 +450,11 @@ namespace WorkflowEngine.Infrastructure.Migrations
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Application", b =>
                 {
                     b.Navigation("Modules");
+                });
+
+            modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.CalculateActionModule", b =>
+                {
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("WorkflowEngine.Domain.ProcessEngine.Entities.Modules.ProcessModule", b =>

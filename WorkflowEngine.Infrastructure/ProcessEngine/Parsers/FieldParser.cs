@@ -67,4 +67,36 @@ public static class FieldParser
     {
         return value.Replace("'", "''");
     }
+
+    /// <summary>
+    /// Substitute @FieldName references in plain text (for dialog messages)
+    /// Returns plain text, not SQL-escaped
+    /// </summary>
+    public static string SubstituteFieldReferencesInText(string text, ExecutionSession session)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        return FieldReferencePattern.Replace(text, match =>
+        {
+            string fieldName = match.Groups[1].Value;
+
+            // Get field module by name
+            var fieldModule = session.ModuleCache.GetModuleByName(
+                session.ApplicationId,
+                fieldName
+            ) as FieldModule;
+
+            if (fieldModule == null)
+            {
+                return match.Value;  // Keep original if not found
+            }
+
+            // Get value from session
+            var value = session.GetFieldValue(fieldModule.Id);
+
+            // Return as plain text (not SQL-formatted)
+            return value?.ToString() ?? "";
+        });
+    }
 }

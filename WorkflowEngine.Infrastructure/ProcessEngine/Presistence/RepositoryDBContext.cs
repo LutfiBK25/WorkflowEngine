@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WorkflowEngine.Domain.ProcessEngine.Entities;
 using WorkflowEngine.Domain.ProcessEngine.Entities.Modules;
+using WorkflowEngine.Domain.ProcessEngine.Enums;
 
 
 namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
@@ -20,6 +21,7 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
         public DbSet<FieldModule> FieldModules { get; set; }
         public DbSet<CompareActionModule> CompareActionsModules { get; set; }
         public DbSet<CalculateActionModule> CalculateActionsModules { get; set; }
+        public DbSet<ListModule> ListModules { get; set; }
 
         // Process module steps
         public DbSet<ProcessModuleDetail> ProcessModuleDetails { get; set; }
@@ -244,23 +246,63 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
             modelBuilder.Entity<DialogActionModule>(entity =>
             {
                 entity.ToTable("t_dialog_action_modules");
-                
 
                 // ✅ ONLY configure type-specific properties
-                entity.Property(e => e.FieldModuleId)
-                    .HasColumnName("field_module_id")
+
+                // Dialog behavior
+                entity.Property(e => e.DialogType)
+                    .HasColumnName("dialog_type")
+                    .HasConversion<int>()
                     .IsRequired();
 
+                // Result field
+                entity.Property(e => e.ResultFieldId)
+                    .HasColumnName("result_field_id");
+
+                // Content fields
+                entity.Property(e => e.MessageFieldId)
+                    .HasColumnName("message_field_id");
+
+                entity.Property(e => e.Help1FieldId)
+                    .HasColumnName("help1_field_id");
+
+                entity.Property(e => e.Help2FieldId)
+                    .HasColumnName("help2_field_id");
+
+                entity.Property(e => e.Help3FieldId)
+                    .HasColumnName("help3_field_id");
+
+                entity.Property(e => e.OptionsFieldId)
+                    .HasColumnName("options_field_id");
+
+                // List support
+                entity.Property(e => e.ListModuleId)
+                    .HasColumnName("list_module_id");
+
+                // Input masking
+                entity.Property(e => e.MaskInput)
+                    .HasColumnName("mask_input")
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.MaskCharacter)
+                    .HasColumnName("mask_character")
+                    .HasMaxLength(1)
+                    .IsRequired()
+                    .HasDefaultValue("*");
+
+                // Optional: Indexes (uncomment if needed)
                 //entity.HasIndex(e => e.ApplicationId)
                 //    .HasDatabaseName("idx_dialog_action_modules_application");
 
-                //entity.HasIndex(e => e.FieldModuleId)
-                //    .HasDatabaseName("idx_dialog_action_modules_field");
+                //entity.HasIndex(e => e.ResultFieldId)
+                //    .HasDatabaseName("idx_dialog_action_modules_result_field");
 
                 //entity.HasIndex(e => new { e.ApplicationId, e.Name })
                 //    .IsUnique()
                 //    .HasDatabaseName("uq_dialog_action_module_name_per_application");
             });
+
 
             // =============================================
             // FIELD MODULE - Concrete Type
@@ -397,6 +439,17 @@ namespace WorkflowEngine.Infrastructure.ProcessEngine.Presistence
                     .HasColumnName("result_field_id")
                     .IsRequired();
 
+            });
+
+            // =============================================
+            // LIST MODULE - ✅ ADDED
+            // =============================================
+            modelBuilder.Entity<ListModule>(entity =>
+            {
+                entity.ToTable("t_list_modules");
+
+                entity.Property(e => e.MaxRows)
+                    .HasColumnName("max_rows");
             });
         }
     }
