@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WorkflowEngine.Application\WorkflowEngine.Application.csproj" />
     <ProjectReference Include="..\WorkflowEngine.Domain\WorkflowEngine.Domain.csproj" />
   </ItemGroup>
 

@@ -14,9 +14,4 @@
     <ProjectReference Include="..\WorkflowEngine.Domain\WorkflowEngine.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="ProcessEngine\Interfaces\" />
-    <Folder Include="Session\Interfaces\" />
-  </ItemGroup>
-
 </Project>

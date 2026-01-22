@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using WorkflowEngine.Application.ProcessEngine.Dtos;
 using WorkflowEngine.Application.Session.Dtos;
-using WorkflowEngine.Infrastructure.ProcessEngine.Execution;
-using WorkflowEngine.Infrastructure.Session;
+using WorkflowEngine.Application.Session.Services;
 
 namespace WorkflowEngine.API.Controllers;
 
@@ -11,12 +8,14 @@ namespace WorkflowEngine.API.Controllers;
 [Route("api/[controller]")]
 public class WorkflowController : ControllerBase
 {
-    private readonly SessionManager _sessionManager;
+    private readonly ISessionService _sessionService;
     private readonly ILogger<WorkflowController> _logger;
 
-    public WorkflowController(SessionManager sessionManager, ILogger<WorkflowController> logger)
+    public WorkflowController(
+        ISessionService sessionService,
+        ILogger<WorkflowController> logger)
     {
-        _sessionManager = sessionManager;
+        _sessionService = sessionService;
         _logger = logger;
     }
 
@@ -25,52 +24,17 @@ public class WorkflowController : ControllerBase
     /// </summary>
     [HttpPost("start")]
     public async Task<ActionResult<StartWorkflowResponse>> StartWorkflow(
-        [FromBody] StartWorkflowRequest request)
+        [FromBody] StartWorkflowRequest request,
+        CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation(
-                "Starting workflow for user: {Username}, App: {AppId}, Process: {ProcessId}",
-                request.Username, request.ApplicationId, request.ProcessModuleId);
-
-            var (session, result, isExisting) = await _sessionManager.StartWorkflowAsync(
-                request.ApplicationId,
-                request.ProcessModuleId,
-                request.Username
-            );
-
-            // Parse dialog JSON if paused
-            object? dialog = null;
-            if (session.IsPaused && !string.IsNullOrEmpty(session.PausedScreenJson))
-            {
-                try
-                {
-                    dialog = JsonSerializer.Deserialize<object>(session.PausedScreenJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse dialog JSON");
-                }
-            }
-
-            string status = DetermineStatus(session, isExisting);
-
-            var response = new StartWorkflowResponse
-            {
-                SessionId = session.SessionId,
-                Username = session.UserId,
-                Status = status,
-                IsExistingSession = isExisting,
-                Message = result.Message,
-                Dialog = dialog,
-                Success = result.Result == ExecutionResult.Success
-            };
-
+            var response = await _sessionService.StartWorkflowAsync(request, cancellationToken);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting workflow for user: {Username}", request.Username);
+            _logger.LogError(ex, "Error in StartWorkflow endpoint");
             return StatusCode(500, new { Error = "Failed to start workflow", Details = ex.Message });
         }
     }
@@ -80,61 +44,23 @@ public class WorkflowController : ControllerBase
     /// </summary>
     [HttpPost("resume")]
     public async Task<ActionResult<ResumeWorkflowResponse>> ResumeWorkflow(
-        [FromBody] ResumeWorkflowRequest request)
+        [FromBody] ResumeWorkflowRequest request,
+        CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation(
-                "Resuming session: {SessionId}, Field: {FieldId}, Value: {Value}",
-                request.SessionId, request.FieldId, request.Value);
+            var response = await _sessionService.ResumeWorkflowAsync(request, cancellationToken);
 
-            var (session, result) = await _sessionManager.ResumeWorkflowAsync(
-                request.SessionId,
-                request.FieldId,
-                request.Value
-            );
-
-            if (session == null)
+            if (response.Status == "NotFound")
             {
-                return NotFound(new ResumeWorkflowResponse
-                {
-                    SessionId = request.SessionId,
-                    Status = "NotFound",
-                    Message = "Session not found or expired",
-                    Success = false
-                });
+                return NotFound(response);
             }
-
-            // Parse dialog JSON if paused again
-            object? dialog = null;
-            if (session.IsPaused && !string.IsNullOrEmpty(session.PausedScreenJson))
-            {
-                try
-                {
-                    dialog = JsonSerializer.Deserialize<object>(session.PausedScreenJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse dialog JSON");
-                }
-            }
-
-            string status = session.IsPaused ? "Paused" : "Completed";
-
-            var response = new ResumeWorkflowResponse
-            {
-                SessionId = session.SessionId,
-                Status = status,
-                Message = result.Message,
-                Dialog = dialog,
-                Success = result.Result == ExecutionResult.Success
-            };
 
             return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resuming session: {SessionId}", request.SessionId);
+            _logger.LogError(ex, "Error in ResumeWorkflow endpoint");
             return StatusCode(500, new { Error = "Failed to resume workflow", Details = ex.Message });
         }
     }
@@ -143,47 +69,49 @@ public class WorkflowController : ControllerBase
     /// Get session status and current state
     /// </summary>
     [HttpGet("session/{sessionId}")]
-    public async Task<ActionResult<SessionStatusResponse>> GetSessionStatus(Guid sessionId)
+    public async Task<ActionResult<SessionStatusResponse>> GetSessionStatus(
+        Guid sessionId,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var session = await _sessionManager.GetSessionAsync(sessionId);
+            var response = await _sessionService.GetSessionStatusAsync(sessionId, cancellationToken);
+            return Ok(response);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { Error = "Session not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetSessionStatus endpoint");
+            return StatusCode(500, new { Error = "Failed to get session status", Details = ex.Message });
+        }
+    }
 
-            if (session == null)
+    /// <summary>
+    /// Get user's active session (if any)
+    /// </summary>
+    [HttpGet("user/{username}/session")]
+    public async Task<ActionResult<SessionStatusResponse>> GetUserSession(
+        string username,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _sessionService.GetUserSessionAsync(username, cancellationToken);
+
+            if (response == null)
             {
-                return NotFound(new { Error = "Session not found" });
+                return NotFound(new { Message = "No active session for user" });
             }
-
-            // Parse dialog JSON if paused
-            object? dialog = null;
-            if (session.IsPaused && !string.IsNullOrEmpty(session.PausedScreenJson))
-            {
-                try
-                {
-                    dialog = JsonSerializer.Deserialize<object>(session.PausedScreenJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse dialog JSON");
-                }
-            }
-
-            var response = new SessionStatusResponse
-            {
-                SessionId = session.SessionId,
-                Username = session.UserId,
-                StartTime = session.StartTime,
-                IsPaused = session.IsPaused,
-                CallDepth = session.CallDepth,
-                Dialog = dialog
-            };
 
             return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting session status: {SessionId}", sessionId);
-            return StatusCode(500, new { Error = "Failed to get session status", Details = ex.Message });
+            _logger.LogError(ex, "Error in GetUserSession endpoint");
+            return StatusCode(500, new { Error = "Failed to get user session", Details = ex.Message });
         }
     }
 
@@ -191,11 +119,13 @@ public class WorkflowController : ControllerBase
     /// Cancel/abandon a session
     /// </summary>
     [HttpDelete("session/{sessionId}")]
-    public async Task<Microsoft.AspNetCore.Mvc.ActionResult> CancelSession(Guid sessionId)
+    public async Task<ActionResult> CancelSession(
+        Guid sessionId,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var success = await _sessionManager.CancelSessionAsync(sessionId);
+            var success = await _sessionService.CancelSessionAsync(sessionId, cancellationToken);
 
             if (!success)
             {
@@ -206,69 +136,8 @@ public class WorkflowController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error cancelling session: {SessionId}", sessionId);
+            _logger.LogError(ex, "Error in CancelSession endpoint");
             return StatusCode(500, new { Error = "Failed to cancel session", Details = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Get user's active session (if any)
-    /// </summary>
-    [HttpGet("user/{username}/session")]
-    public async Task<ActionResult<SessionStatusResponse>> GetUserSession(string username)
-    {
-        try
-        {
-            var session = await _sessionManager.GetUserSessionAsync(username);
-
-            if (session == null)
-            {
-                return NotFound(new { Message = "No active session for user" });
-            }
-
-            // Parse dialog JSON if paused
-            object? dialog = null;
-            if (session.IsPaused && !string.IsNullOrEmpty(session.PausedScreenJson))
-            {
-                try
-                {
-                    dialog = JsonSerializer.Deserialize<object>(session.PausedScreenJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse dialog JSON");
-                }
-            }
-
-            var response = new SessionStatusResponse
-            {
-                SessionId = session.SessionId,
-                Username = session.UserId,
-                StartTime = session.StartTime,
-                IsPaused = session.IsPaused,
-                CallDepth = session.CallDepth,
-                Dialog = dialog
-            };
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting user session: {Username}", username);
-            return StatusCode(500, new { Error = "Failed to get user session", Details = ex.Message });
-        }
-    }
-
-    private string DetermineStatus(
-        Infrastructure.ProcessEngine.Execution.ExecutionSession session,
-        bool isExisting)
-    {
-        if (isExisting && session.IsPaused)
-            return "ExistingSessionPaused";
-        if (isExisting)
-            return "ExistingSessionActive";
-        if (session.IsPaused)
-            return "NewSessionPaused";
-        return "Completed";
     }
 }

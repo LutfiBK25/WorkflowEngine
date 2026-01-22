@@ -1,5 +1,4 @@
-﻿
-namespace WorkflowEngine.Application.ProcessEngine.Dtos;
+﻿namespace WorkflowEngine.Application.Session.Dtos;
 
 /// <summary>
 /// Response from starting/connecting to session

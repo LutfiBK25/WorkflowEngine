@@ -1,47 +1,50 @@
-﻿
+﻿using Microsoft.Extensions.Logging;
+using WorkflowEngine.Application.Session.Interfaces;
 using WorkflowEngine.Infrastructure.ProcessEngine;
 using WorkflowEngine.Infrastructure.ProcessEngine.Execution;
 
 namespace WorkflowEngine.Infrastructure.Session;
 
-/// <summary>
-/// Manages workflow execution sessions
-/// ONE SESSION PER USER constraint enforced
-/// </summary>
-public class SessionManager
+public class SessionManager : ISessionManager  // ✅ Implements interface
 {
     private readonly ISessionStore _sessionStore;
     private readonly ExecutionEngine _executionEngine;
+    private readonly ILogger<SessionManager> _logger;
 
-    public SessionManager(ISessionStore sessionStore, ExecutionEngine executionEngine)
+    public SessionManager(
+        ISessionStore sessionStore,
+        ExecutionEngine executionEngine,
+        ILogger<SessionManager> logger)
     {
         _sessionStore = sessionStore;
         _executionEngine = executionEngine;
+        _logger = logger;
     }
 
-    /// <summary>
-    /// Create and start a new workflow session
-    /// </summary>
-    public async Task<(ExecutionSession Session, ActionResult Result, bool IsExisting)> StartWorkflowAsync(
+    public async Task<StartWorkflowResult> StartWorkflowAsync(
         Guid applicationId,
         Guid processModuleId,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        // Check if user already has an active session
         var existingSession = await _sessionStore.GetUserSessionAsync(userId, cancellationToken);
 
         if (existingSession != null)
         {
-            // User already has a session - return it instead of creating new one
-            return (
-                existingSession,
-                ActionResult.Pass($"Connected to existing session. Status: {(existingSession.IsPaused ? "Paused" : "Active")}"),
-                IsExisting: true
+            var status = DetermineStartStatus(existingSession, isExisting: true);
+            
+            return new StartWorkflowResult(
+                existingSession.SessionId,
+                existingSession.UserId,
+                existingSession.IsPaused,
+                existingSession.PausedScreenJson,
+                status,
+                IsExisting: true,
+                Message: $"Connected to existing session. Status: {(existingSession.IsPaused ? "Paused" : "Active")}",
+                Success: true
             );
         }
 
-        // No existing session - create new one
         var session = new ExecutionSession(
             applicationId,
             processModuleId,
@@ -52,19 +55,26 @@ public class SessionManager
 
         var result = await session.Start();
 
-        // Save session if paused (waiting for input) or still running
         if (session.IsPaused)
         {
             await _sessionStore.SaveSessionAsync(session, cancellationToken);
         }
 
-        return (session, result, IsExisting: false);
+        var newStatus = DetermineStartStatus(session, isExisting: false);
+
+        return new StartWorkflowResult(
+            session.SessionId,
+            session.UserId,
+            session.IsPaused,
+            session.PausedScreenJson,
+            newStatus,
+            IsExisting: false,
+            Message: result.Message ?? "Workflow started",
+            Success: result.Result == ExecutionResult.Success
+        );
     }
 
-    /// <summary>
-    /// Resume a paused session with user input
-    /// </summary>
-    public async Task<(ExecutionSession? Session, ActionResult Result)> ResumeWorkflowAsync(
+    public async Task<ResumeWorkflowResult> ResumeWorkflowAsync(
         Guid sessionId,
         Guid fieldId,
         object value,
@@ -74,57 +84,88 @@ public class SessionManager
 
         if (session == null)
         {
-            return (null, ActionResult.Fail("Session not found"));
+            return new ResumeWorkflowResult(
+                sessionId,
+                IsPaused: false,
+                PausedScreenJson: null,
+                Message: "Session not found",
+                Success: false
+            );
         }
 
         if (!session.CanResume())
         {
-            return (session, ActionResult.Fail("Session is not in a resumable state"));
+            return new ResumeWorkflowResult(
+                session.SessionId,
+                session.IsPaused,
+                session.PausedScreenJson,
+                Message: "Session is not in a resumable state",
+                Success: false
+            );
         }
 
-        // Store user input
         session.SetFieldValue(fieldId, value);
-
-        // Resume execution
         var result = await session.Start();
 
-        // Update or remove session
         if (session.IsPaused)
         {
-            // Still paused (another dialog)
             await _sessionStore.SaveSessionAsync(session, cancellationToken);
         }
         else
         {
-            // Completed - remove from storage
             await _sessionStore.RemoveSessionAsync(sessionId, cancellationToken);
         }
 
-        return (session, result);
+        return new ResumeWorkflowResult(
+            session.SessionId,
+            session.IsPaused,
+            session.PausedScreenJson,
+            Message: result.Message ?? "Workflow resumed",
+            Success: result.Result == ExecutionResult.Success
+        );
     }
 
-    /// <summary>
-    /// Get session by ID
-    /// </summary>
-    public Task<ExecutionSession?> GetSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<SessionInfo?> GetSessionAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
     {
-        return _sessionStore.GetSessionAsync(sessionId, cancellationToken);
+        var session = await _sessionStore.GetSessionAsync(sessionId, cancellationToken);
+
+        if (session == null)
+            return null;
+
+        return new SessionInfo(
+            session.SessionId,
+            session.UserId,
+            session.StartTime,
+            session.IsPaused,
+            session.CallDepth,
+            session.PausedScreenJson
+        );
     }
 
-    /// <summary>
-    /// Get user's active session (returns null if no active session)
-    /// </summary>
-    public Task<ExecutionSession?> GetUserSessionAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<SessionInfo?> GetUserSessionAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
-        return _sessionStore.GetUserSessionAsync(userId, cancellationToken);
+        var session = await _sessionStore.GetUserSessionAsync(userId, cancellationToken);
+
+        if (session == null)
+            return null;
+
+        return new SessionInfo(
+            session.SessionId,
+            session.UserId,
+            session.StartTime,
+            session.IsPaused,
+            session.CallDepth,
+            session.PausedScreenJson
+        );
     }
 
-
-
-    /// <summary>
-    /// Cancel/abandon a session by session ID
-    /// </summary>
-    public async Task<bool> CancelSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<bool> CancelSessionAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
     {
         var session = await _sessionStore.GetSessionAsync(sessionId, cancellationToken);
         if (session == null)
@@ -134,10 +175,9 @@ public class SessionManager
         return true;
     }
 
-    /// <summary>
-    /// Cancel/abandon a user's active session
-    /// </summary>
-    public async Task<bool> CancelUserSessionAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<bool> CancelUserSessionAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
         var session = await _sessionStore.GetUserSessionAsync(userId, cancellationToken);
         if (session == null)
@@ -147,12 +187,21 @@ public class SessionManager
         return true;
     }
 
-    /// <summary>
-    /// Cleanup expired sessions
-    /// </summary>
-    public Task CleanupExpiredSessionsAsync(TimeSpan sessionInActiveMaxAge, CancellationToken cancellationToken = default)
+    public Task CleanupExpiredSessionsAsync(
+        TimeSpan sessionInActiveMaxAge,
+        CancellationToken cancellationToken = default)
     {
         return _sessionStore.CleanupExpiredSessionsAsync(sessionInActiveMaxAge, cancellationToken);
     }
 
+    private string DetermineStartStatus(ExecutionSession session, bool isExisting)
+    {
+        if (isExisting && session.IsPaused)
+            return "ExistingSessionPaused";
+        if (isExisting)
+            return "ExistingSessionActive";
+        if (session.IsPaused)
+            return "NewSessionPaused";
+        return "Completed";
+    }
 }

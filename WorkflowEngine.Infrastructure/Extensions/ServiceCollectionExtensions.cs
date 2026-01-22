@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WorkflowEngine.Application.Session.Interfaces;
 using WorkflowEngine.Infrastructure.ProcessEngine;
 using WorkflowEngine.Infrastructure.ProcessEngine.Presistence;
 using WorkflowEngine.Infrastructure.ProcessEngine.Services;
@@ -56,7 +57,7 @@ public static class ServiceCollectionExtensions
 
         // Session Management
         services.AddSingleton<ISessionStore, InMemorySessionStore>();
-        services.AddSingleton<SessionManager>();
+        services.AddSingleton<ISessionManager, SessionManager>();
 
         // Background cleanup service
         services.AddHostedService<SessionCleanupService>();

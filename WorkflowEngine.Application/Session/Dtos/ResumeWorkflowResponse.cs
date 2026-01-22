@@ -1,6 +1,4 @@
-﻿
-
-namespace WorkflowEngine.Application.ProcessEngine.Dtos;
+﻿namespace WorkflowEngine.Application.Session.Dtos;
 
 public record ResumeWorkflowResponse
 {
